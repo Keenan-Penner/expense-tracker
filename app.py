@@ -1,7 +1,9 @@
 import streamlit as st
 import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 from datetime import date, timedelta
+
 
 data = pd.read_excel("data/transactions.xlsx")
 data['date'] = pd.to_datetime(data['date'], format= "%d-%m-%Y")
@@ -146,15 +148,57 @@ indicators(c3, "Net balance",     f"{total_income + total_spending:+,.2f} €", 
 indicators(c4, "To savings account",   f"{total_savings} €" ,          "kpi-positive" if total_savings >0 else "kpi-neutral")
 
 
+# ── Pie charts ────────────────────────────────────────────────────────────────────
+
 st.markdown('<div class="section-title">Overview</div>', unsafe_allow_html=True)
 left, right = st.columns([2, 2])
+
 with left:
-    chart_expense_df = spending.groupby('category')['abs_amount'].sum().reset_index()
-    fig = px.pie(chart_expense_df, values= 'abs_amount', names= 'category', title= 'Spending repartition')
-    fig.update_traces(hovertemplate='%{label}<br>%{value} €<extra></extra>')
-    st.plotly_chart(fig, use_container_width=True)
+    # Initialize session state for selected category
+    if 'selected_category' not in st.session_state:
+        st.session_state.selected_category = None
+
+    if st.session_state.selected_category is None:
+        chart_expense_df = spending.groupby('category').agg(abs_amount= ('abs_amount', 'sum'), count= ('abs_amount', 'count')).reset_index()
+        # st.write(chart_expense_df)
+
+        # Dropdown to drill down — sits right below the chart
+        categories = chart_expense_df['category'].tolist()
+        chosen = st.selectbox("🔍 Drill into a category:", ["— select —"] + categories, key="cat_select")
+        if chosen != "— select —":
+            st.session_state.selected_category = chosen
+            st.rerun()
+        fig = go.Figure(go.Pie(
+        labels=chart_expense_df['category'],
+        values=chart_expense_df['abs_amount'],
+        customdata=chart_expense_df['count'],
+        hovertemplate='%{label}<br>%{value} €<br>%{customdata} transactions<extra></extra>'))
+        fig.update_layout(title='Spending by Category')
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # fig = px.pie(chart_expense_df, values='abs_amount', names='category', title='Spending by Category', custom_data=['count'])
+        # fig.update_traces(hovertemplate='%{label}<br>%{value} €<br>%{custom_data}<extra></extra>')
+        # st.plotly_chart(fig, use_container_width=True, key="category_chart")
+
+        
+
+    else:
+        selected = st.session_state.selected_category
+        filtered = spending[spending['category'] == selected]
+        chart_sub_df = filtered.groupby('subcategory')['abs_amount'].sum().reset_index()
+
+        if st.button("← Back to all categories"):
+            st.session_state.selected_category = None
+            st.rerun()
+
+        fig = px.pie(chart_sub_df, values='abs_amount', names='subcategory', title=f'{selected} — Subcategories')
+        fig.update_traces(hovertemplate='%{label}<br>%{value} €<extra></extra>')
+        st.plotly_chart(fig, use_container_width=True, key="subcategory_chart")
+
+        
+
 with right:
     chart_revenue_df = income.groupby('subcategory')['amount'].sum().reset_index()
-    fig = px.pie(chart_revenue_df, values= 'amount', names= 'subcategory', title= 'Revenue repartition')
+    fig = px.pie(chart_revenue_df, values='amount', names='subcategory', title='Revenue repartition')
     fig.update_traces(hovertemplate='%{label}<br>%{value} €<extra></extra>')
     st.plotly_chart(fig, use_container_width=True)
