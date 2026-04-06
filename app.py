@@ -88,7 +88,7 @@ with st.sidebar:
         end_date = st.date_input("To", value=data["date"].max().date())
 
     st.markdown("**Quick periods**")
-    qp = st.radio("", ["Custom", "Last 30 days", "Last 3 months", "Last 6 months", "Last year", "This year"], label_visibility="collapsed")
+    qp = st.radio("Quick period", ["Custom", "Last 30 days", "Last 3 months", "Last 6 months", "Last year", "This year"], label_visibility="collapsed")
     if qp != "Custom":
         today = date.today()
         if qp == "Last 30 days":
@@ -174,11 +174,12 @@ with left:
         customdata=chart_expense_df['count'],
         hovertemplate='%{label}<br>%{value} €<br>%{customdata} transactions<extra></extra>'))
         fig.update_layout(title='Spending by Category')
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width= 'stretch', key="subcategory_chart")
+
         
         # fig = px.pie(chart_expense_df, values='abs_amount', names='category', title='Spending by Category', custom_data=['count'])
         # fig.update_traces(hovertemplate='%{label}<br>%{value} €<br>%{custom_data}<extra></extra>')
-        # st.plotly_chart(fig, use_container_width=True, key="category_chart")
+        # st.plotly_chart(fig, width=True, key="category_chart")
 
         
 
@@ -193,7 +194,7 @@ with left:
 
         fig = px.pie(chart_sub_df, values='abs_amount', names='subcategory', title=f'{selected} — Subcategories')
         fig.update_traces(hovertemplate='%{label}<br>%{value} €<extra></extra>')
-        st.plotly_chart(fig, use_container_width=True, key="subcategory_chart")
+        st.plotly_chart(fig, width= 'stretch', key="subcategory_chart")
 
         
 
@@ -201,4 +202,26 @@ with right:
     chart_revenue_df = income.groupby('subcategory')['amount'].sum().reset_index()
     fig = px.pie(chart_revenue_df, values='amount', names='subcategory', title='Revenue repartition')
     fig.update_traces(hovertemplate='%{label}<br>%{value} €<extra></extra>')
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width= 'stretch')
+
+
+
+
+# ── Account balance ────────────────────────────────────────────────────────────────────
+
+sorted_df = df.sort_values('date').copy()
+sorted_df['balance'] = sorted_df['amount'].cumsum()
+st.line_chart(sorted_df, x= 'date', y= 'balance', x_label= 'date', y_label= 'cumulative balance') 
+
+
+# ── Operations ───────────────────────────────────────────────────────────────────
+
+date_df = df.copy()
+date_df['date'] = date_df['date'].dt.date
+
+def color_mapping(num):
+    color = '#eb5757' if num < 0 else '#6fcf97'
+    return f'background-color : {color}; color : white'  # (streamlit pandas styler requires this CSS style)
+
+color_df = date_df.style.map(color_mapping, subset= ['amount'])
+st.dataframe(color_df)
