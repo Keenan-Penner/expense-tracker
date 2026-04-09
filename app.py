@@ -30,8 +30,27 @@ h1, h2, h3 { font-family: 'DM Serif Display', serif; }
 
 /* Sidebar */
 section[data-testid="stSidebar"] {
-    background-color: #0F7039;
-    border-right: 1px solid #2a2a2e;
+    background-color: #B0FFB2 !important;
+    border-right: 1px solid #2a2a2e !important;
+    color: #000000 !important;
+}
+/* Force all text inside sidebar */
+section[data-testid="stSidebar"] * {
+    color: #000000 !important;
+}
+
+/* Optional: fix widgets (inputs, selects, etc.) */
+section[data-testid="stSidebar"] .stTextInput input,
+section[data-testid="stSidebar"] .stSelectbox div,
+section[data-testid="stSidebar"] .stNumberInput input {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+}
+
+/* Date input field (the visible box) */
+section[data-testid="stSidebar"] input[type="text"] {
+    background-color: #ffffff !important;
+    color: #000000 !important;
 }
 
 /* KPI cards */
@@ -66,9 +85,6 @@ section[data-testid="stSidebar"] {
     color: #00000;
 }
 
-/* Plotly chart background override */
-.js-plotly-plot .plotly .bg { fill: #FFFFFF !important; }
-
 /* Streamlit metric delta */
 [data-testid="stMetricDelta"] { font-size: 12px; }
 </style>
@@ -85,7 +101,7 @@ with st.sidebar:
     with col_a:
         start_date = st.date_input("From", value=data["date"].min().date())
     with col_b:
-        end_date = st.date_input("To", value=data["date"].max().date())
+        end_date = st.date_input("To", value=date.today())
 
     st.markdown("**Quick periods**")
     qp = st.radio("Quick period", ["Custom", "Last 30 days", "Last 3 months", "Last 6 months", "Last year", "This year"], label_visibility="collapsed")
